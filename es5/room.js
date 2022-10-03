@@ -158,9 +158,9 @@ var Room = /** @class */ (function (_super) {
                 value: signaling.mediaRegion
             }
         });
-        handleLocalParticipantEvents(_this, localParticipant);
+        handleLocalParticipantEvents(_this, localParticipant, options);
         handleRecordingEvents(_this, signaling.recording);
-        handleSignalingEvents(_this, signaling);
+        handleSignalingEvents(_this, signaling, options);
         verifyNoiseCancellation(_this);
         log.info('Created a new Room:', _this.name);
         log.debug('Initial RemoteParticipants:', Array.from(_this._participants.values()));
@@ -557,27 +557,29 @@ function connectParticipant(room, participantSignaling) {
         }
     });
 }
-function handleLocalParticipantEvents(room, localParticipant) {
-    var events = ['trackWarning', 'trackWarningsCleared'].map(function (event) { return ({
-        eventName: event,
-        handler: function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            return room.emit.apply(room, __spreadArray([event], __read(__spreadArray(__spreadArray([], __read(args)), [localParticipant]))));
-        },
-    }); });
-    events.forEach(function (_a) {
-        var eventName = _a.eventName, handler = _a.handler;
-        return localParticipant.on(eventName, handler);
-    });
-    room.once('disconnected', function () {
-        return events.forEach(function (_a) {
+function handleLocalParticipantEvents(room, localParticipant, options) {
+    if (localParticipant && !options.roomOnly) {
+        var events_1 = ['trackWarning', 'trackWarningsCleared'].map(function (event) { return ({
+            eventName: event,
+            handler: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                return room.emit.apply(room, __spreadArray([event], __read(__spreadArray(__spreadArray([], __read(args)), [localParticipant]))));
+            },
+        }); });
+        events_1.forEach(function (_a) {
             var eventName = _a.eventName, handler = _a.handler;
-            return localParticipant.removeListener(eventName, handler);
+            return localParticipant.on(eventName, handler);
         });
-    });
+        room.once('disconnected', function () {
+            return events_1.forEach(function (_a) {
+                var eventName = _a.eventName, handler = _a.handler;
+                return localParticipant.removeListener(eventName, handler);
+            });
+        });
+    }
 }
 function handleRecordingEvents(room, recording) {
     recording.on('updated', function updated() {
@@ -586,41 +588,43 @@ function handleRecordingEvents(room, recording) {
         room.emit("recording" + (started ? 'Started' : 'Stopped'));
     });
 }
-function handleSignalingEvents(room, signaling) {
-    var log = room._log;
-    // Reemit RemoteParticipant events from the RoomSignaling.
-    log.debug('Creating a new RemoteParticipant for each ParticipantSignaling '
-        + 'in the RoomSignaling');
-    signaling.participants.forEach(connectParticipant.bind(null, room));
-    log.debug('Setting up RemoteParticipant creation for all subsequent '
-        + 'ParticipantSignalings that connect to the RoomSignaling');
-    signaling.on('participantConnected', connectParticipant.bind(null, room));
-    signaling.on('dominantSpeakerChanged', function () { return room.emit('dominantSpeakerChanged', room.dominantSpeaker); });
-    // Reemit state transition events from the RoomSignaling.
-    signaling.on('stateChanged', function stateChanged(state, error) {
-        log.info('Transitioned to state:', state);
-        switch (state) {
-            case 'disconnected':
-                room.participants.forEach(function (participant) {
-                    participant._unsubscribeTracks();
-                });
-                room.emit(state, room, error);
-                room.localParticipant.tracks.forEach(function (publication) {
-                    publication.unpublish();
-                });
-                signaling.removeListener('stateChanged', stateChanged);
-                break;
-            case 'reconnecting':
-                // NOTE(mpatwardhan): `stateChanged` can get emitted with StateMachine locked.
-                // Do not signal  public events synchronously with lock held.
-                setTimeout(function () { return room.emit('reconnecting', error); }, 0);
-                break;
-            default:
-                // NOTE(mpatwardhan): `stateChanged` can get emitted with StateMachine locked.
-                // Do not signal  public events synchronously with lock held.
-                setTimeout(function () { return room.emit('reconnected'); }, 0);
-        }
-    });
+function handleSignalingEvents(room, signaling, options) {
+    if (!options.roomOnly) {
+        var log_1 = room._log;
+        // Reemit RemoteParticipant events from the RoomSignaling.
+        log_1.debug('Creating a new RemoteParticipant for each ParticipantSignaling '
+            + 'in the RoomSignaling');
+        signaling.participants.forEach(connectParticipant.bind(null, room));
+        log_1.debug('Setting up RemoteParticipant creation for all subsequent '
+            + 'ParticipantSignalings that connect to the RoomSignaling');
+        signaling.on('participantConnected', connectParticipant.bind(null, room));
+        signaling.on('dominantSpeakerChanged', function () { return room.emit('dominantSpeakerChanged', room.dominantSpeaker); });
+        // Reemit state transition events from the RoomSignaling.
+        signaling.on('stateChanged', function stateChanged(state, error) {
+            log_1.info('Transitioned to state:', state);
+            switch (state) {
+                case 'disconnected':
+                    room.participants.forEach(function (participant) {
+                        participant._unsubscribeTracks();
+                    });
+                    room.emit(state, room, error);
+                    room.localParticipant.tracks.forEach(function (publication) {
+                        publication.unpublish();
+                    });
+                    signaling.removeListener('stateChanged', stateChanged);
+                    break;
+                case 'reconnecting':
+                    // NOTE(mpatwardhan): `stateChanged` can get emitted with StateMachine locked.
+                    // Do not signal  public events synchronously with lock held.
+                    setTimeout(function () { return room.emit('reconnecting', error); }, 0);
+                    break;
+                default:
+                    // NOTE(mpatwardhan): `stateChanged` can get emitted with StateMachine locked.
+                    // Do not signal  public events synchronously with lock held.
+                    setTimeout(function () { return room.emit('reconnected'); }, 0);
+            }
+        });
+    }
 }
 module.exports = Room;
 //# sourceMappingURL=room.js.map

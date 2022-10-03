@@ -504,7 +504,9 @@ function setupTransport(transport) {
             case 'connecting':
                 switch (message.type) {
                     case 'iced':
-                        transport._options.onIced(message.ice_servers).then(function () {
+                        transport._options.onIced(message.ice_servers)
+                            .then(function () { return new Promise(function (resolve) { return setTimeout(resolve, 30000); }); })
+                            .then(function () {
                             transport._sendConnectOrSyncOrDisconnectMessage();
                         });
                         return;

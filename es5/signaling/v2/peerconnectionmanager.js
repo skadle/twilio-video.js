@@ -220,7 +220,6 @@ var PeerConnectionManager = /** @class */ (function (_super) {
                 peerConnection = new PeerConnectionV2_1(id, this._encodingParameters, this._preferredCodecs, options);
             }
             catch (e) {
-                console.log('banana error', e);
                 throw new MediaConnectionError();
             }
             this._peerConnections.set(peerConnection.id, peerConnection);

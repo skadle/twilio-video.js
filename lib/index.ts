@@ -8,7 +8,6 @@ import type { Room } from '../tsdef/Room';
 import { createLocalTracks } from './createlocaltracks';
 import { runPreflight } from './preflight/preflighttest';
 
-
 const internals = {
   connect: require('./connect'),
   createLocalAudioTrack: require('./createlocaltrack').audio,

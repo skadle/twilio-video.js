@@ -10,7 +10,6 @@ if (typeof RTCSessionDescription === 'function') {
             module.exports = require('./firefox');
             break;
         default:
-            console.log('banana chrome is selected');
             module.exports = require('./chrome');
             break;
     }

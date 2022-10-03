@@ -218,8 +218,10 @@ function connect(token, options) {
         preferredVideoCodecs: [],
         realm: DEFAULT_REALM,
         region: DEFAULT_REGION,
-        signaling: SignalingV2
+        signaling: SignalingV2,
+        roomOnly: false
     }, filterObject(options));
+    console.info('stuff options ', options);
     /* eslint new-cap:0 */
     var eventPublisherOptions = {};
     if (typeof options.wsServerInsights === 'string') {
@@ -854,19 +856,24 @@ function createLocalParticipant(signaling, log, encodingParameters, networkQuali
     return new options.LocalParticipant(localParticipantSignaling, localTracks, options);
 }
 function createRoom(options, localParticipant, roomSignaling) {
+    console.info('stuff calling create room');
     var room = new Room(localParticipant, roomSignaling, options);
     var log = options.log;
+    console.info('stuff room???', room);
     log.debug('Creating a new Room:', room);
-    roomSignaling.on('stateChanged', function stateChanged(state) {
-        if (state === 'disconnected') {
-            log.info('Disconnected from Room:', room.toString());
-            roomSignaling.removeListener('stateChanged', stateChanged);
-        }
-    });
+    if (roomSignaling) { // need to remove if
+        roomSignaling.on('stateChanged', function stateChanged(state) {
+            if (state === 'disconnected') {
+                log.info('Disconnected from Room:', room.toString());
+                roomSignaling.removeListener('stateChanged', stateChanged);
+            }
+        });
+    }
     return room;
 }
 function createRoomSignaling(token, options, signaling, encodingParameters, preferredCodecs, localParticipant) {
     options.log.debug('Creating a new RoomSignaling');
+    console.info('stuff calling createRoomSignaling');
     return signaling.connect(localParticipant._signaling, token, encodingParameters, preferredCodecs, options);
 }
 function getLocalTracks(options, handleLocalTracks) {

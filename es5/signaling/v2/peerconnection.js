@@ -139,11 +139,9 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
             iceServers: twilIce,
             enableDtlsSrtp: true
         };
-        console.log('banana config', citrixConfiguration);
         var log = options.log ? options.log.createLog('webrtc', _this) : new Log('webrtc', _this, logLevels, options.loggerName);
         // const peerConnection = new RTCPeerConnection(configuration, options.chromeSpecificConstraints);
         var peerConnection = new RTCPeerConnection(citrixConfiguration);
-        console.log('banana peerConnection', peerConnection, configuration);
         if (options.dummyAudioMediaStreamTrack) {
             peerConnection.addTrack(options.dummyAudioMediaStreamTrack);
         }
@@ -599,6 +597,7 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
     PeerConnectionV2.prototype._addOrUpdateTransceiver = function (track) {
         var _this = this;
         var transceiver = takeRecycledTransceiver(this, track.kind);
+        var stream = new MediaStream(Array.of(track));
         if (transceiver && transceiver.sender) {
             var oldTrackId = transceiver.sender.track ? transceiver.sender.track.id : null;
             if (oldTrackId) {
@@ -616,7 +615,8 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
             }));
             return transceiver;
         }
-        return this._peerConnection.addTransceiver(track);
+        this._peerConnection.addTrack(track, stream);
+        // return this._peerConnection.addTransceiver(track);
     };
     /**
      * Check the {@link IceBox}.
@@ -1001,13 +1001,15 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
         }
         var sdpConstraints = {
             mandatory: {
+                audio: true,
                 OfferToReceiveAudio: true,
-                OfferToReceiveVideo: true,
+                video: true,
+                OfferToReceiveVideo: true
             }
         };
         return Promise.all(this._replaceTrackPromises.values()).then(function () {
             return _this._peerConnection.createOffer(function (offer) {
-                console.log('banana first statement');
+                _this._peerConnection.setLocalDescription(offer);
                 if (isFirefox) {
                     // NOTE(mmalavalli): We work around Chromium bug 1106157 by disabling
                     // RTX in Firefox 79+. For more details about the bug, please go here:
@@ -1234,7 +1236,6 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
                 }
             }
         }).then(function () { return _this._peerConnection.setRemoteDescription(description); }).then(function () {
-            console.log('banana remote getting called?', description);
             if (description.type === 'answer') {
                 if (_this._isRestartingIce) {
                     _this._log.debug('An ICE restart was in-progress and is now completed');
@@ -1442,16 +1443,16 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
      * @returns {void}
      */
     PeerConnectionV2.prototype.addMediaTrackSender = function (mediaTrackSender) {
-        // banana changes
-        // if (this._peerConnection.signalingState === 'closed' || this._rtpSenders.has(mediaTrackSender)) {
-        //   return;
-        // }
-        // const transceiver = this._addOrUpdateTransceiver(mediaTrackSender.track);
-        // const { sender } = transceiver;
-        // mediaTrackSender.addSender(sender, encodings => this._setPublisherHint(mediaTrackSender, encodings));
-        // this._rtpNewSenders.add(sender);
-        // this._rtpSenders.set(mediaTrackSender, sender);
-        console.info('banana mediatraksender', mediaTrackSender);
+        var _this = this;
+        this._addOrUpdateTransceiver(mediaTrackSender.track);
+        if (this._peerConnection.signalingState === 'closed' || this._rtpSenders.has(mediaTrackSender)) {
+            return;
+        }
+        var transceiver = this._addOrUpdateTransceiver(mediaTrackSender.track);
+        var sender = transceiver.sender;
+        mediaTrackSender.addSender(sender, function (encodings) { return _this._setPublisherHint(mediaTrackSender, encodings); });
+        this._rtpNewSenders.add(sender);
+        this._rtpSenders.set(mediaTrackSender, sender);
     };
     /**
      * Close the {@link PeerConnectionV2}.
