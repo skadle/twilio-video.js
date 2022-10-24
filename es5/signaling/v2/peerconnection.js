@@ -1443,16 +1443,15 @@ var PeerConnectionV2 = /** @class */ (function (_super) {
      * @returns {void}
      */
     PeerConnectionV2.prototype.addMediaTrackSender = function (mediaTrackSender) {
-        var _this = this;
-        this._addOrUpdateTransceiver(mediaTrackSender.track);
-        if (this._peerConnection.signalingState === 'closed' || this._rtpSenders.has(mediaTrackSender)) {
-            return;
-        }
-        var transceiver = this._addOrUpdateTransceiver(mediaTrackSender.track);
-        var sender = transceiver.sender;
-        mediaTrackSender.addSender(sender, function (encodings) { return _this._setPublisherHint(mediaTrackSender, encodings); });
-        this._rtpNewSenders.add(sender);
-        this._rtpSenders.set(mediaTrackSender, sender);
+        // this._addOrUpdateTransceiver(mediaTrackSender.track);
+        // if (this._peerConnection.signalingState === 'closed' || this._rtpSenders.has(mediaTrackSender)) {
+        //   return;
+        // }
+        // const transceiver = this._addOrUpdateTransceiver(mediaTrackSender.track);
+        // const { sender } = transceiver;
+        // mediaTrackSender.addSender(sender, encodings => this._setPublisherHint(mediaTrackSender, encodings));
+        // this._rtpNewSenders.add(sender);
+        // this._rtpSenders.set(mediaTrackSender, sender);
     };
     /**
      * Close the {@link PeerConnectionV2}.

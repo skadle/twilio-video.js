@@ -51,6 +51,18 @@ var RemoteAudioTrack = /** @class */ (function (_super) {
         return "[RemoteAudioTrack #" + this._instanceId + ": " + this.sid + "]";
     };
     /**
+     * @private
+     */
+    RemoteAudioTrack.prototype._start = function () {
+        _super.prototype._start.call(this);
+        if (this._dummyEl) {
+            // NOTE(mpatwardhan): To fix VIDEO-6336, clear dummy element after the
+            // RemoteAudioTrack has started.
+            this._dummyEl.srcObject = null;
+            this._dummyEl = null;
+        }
+    };
+    /**
      * Update the subscribe {@link Track.Priority} of the {@link RemoteAudioTrack}.
      * @param {?Track.Priority} priority - the new subscribe {@link Track.Priority};
      *   Currently setPriority has no effect on audio tracks.

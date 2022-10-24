@@ -42,17 +42,6 @@ var AudioTrack = /** @class */ (function (_super) {
         return _super.call(this, mediaTrackTransceiver, options) || this;
     }
     /**
-     * @private
-     */
-    AudioTrack.prototype._start = function () {
-        _super.prototype._start.call(this);
-        if (this._dummyEl) {
-            // once started let go of dummy element
-            this._dummyEl.srcObject = null;
-            this._dummyEl = null;
-        }
-    };
-    /**
      * Create an HTMLAudioElement and attach the {@link AudioTrack} to it.
      *
      * The HTMLAudioElement's <code>srcObject</code> will be set to a new
