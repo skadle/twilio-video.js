@@ -5,7 +5,6 @@ const assert = require('assert');
 const {
   connect,
   createLocalAudioTrack,
-  createLocalTracks,
   createLocalVideoTrack,
   LocalDataTrack
 } = require('../../../es5');
@@ -26,6 +25,7 @@ const { isFirefox } = require('../../lib/guessbrowser');
 const {
   capitalize,
   combinationContext,
+  createSyntheticAudioStreamTrack,
   participantsConnected,
   randomName,
   setup,
@@ -386,10 +386,10 @@ describe('LocalTrackPublication', function() {
           participantNames: ['Observer', 'Alice', 'Bob']
         });
 
-        [aliceTracks, bobTracks] = await Promise.all(['alice', 'bob'].map(() => createLocalTracks({
-          audio: { fake: true },
-          video: smallVideoConstraints
-        })));
+        [aliceTracks, bobTracks] = await Promise.all(['alice', 'bob'].map(async () => [
+          createSyntheticAudioStreamTrack() || await createLocalAudioTrack({ fake: true }),
+          await createLocalVideoTrack(smallVideoConstraints),
+        ]));
 
         [aliceRoom, bobRoom] = thoseRooms;
         [aliceLocal, bobLocal] = [aliceRoom, bobRoom].map(room => room.localParticipant);

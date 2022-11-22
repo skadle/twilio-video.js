@@ -26,6 +26,7 @@ const getToken = require('../../lib/token');
 const { trackPriority: { PRIORITY_HIGH, PRIORITY_LOW } } = require('../../../es5/util/constants');
 
 const {
+  createSyntheticAudioStreamTrack,
   combinationContext,
   dominantSpeakerChanged,
   participantsConnected,
@@ -446,10 +447,16 @@ describe('Room', function() {
       const sid = await waitFor(createRoom(randomName(), defaults.topology), 'creating room');
       const options = Object.assign({ name: sid }, defaults);
       const thisRoom = await waitFor(connect(getToken('Alice'), Object.assign({ tracks: [] }, options)), `Alice connecting to the room: ${sid}`);
-      const tracks = [await createLocalAudioTrack({ fake: true })];
+
+      const tracks = [createSyntheticAudioStreamTrack() || (await createLocalTracks({
+        audio: true,
+        fake: true
+      }))[0]];
+
       const thatRoom = await waitFor(connect(getToken('Bob'), Object.assign({ tracks }, options), `Bob connecting to the room: ${sid}`));
       await waitFor(participantsConnected(thisRoom, 1), `Alice receives participantsConnected: ${sid}`);
       const thatParticipant = thisRoom.participants.get(thatRoom.localParticipant.sid);
+
       await waitFor(dominantSpeakerChanged(thisRoom, thatParticipant), `Alice receives dominantSpeakerChanged: ${sid}`);
       assert.equal(thisRoom.dominantSpeaker, thatParticipant);
       [thisRoom, thatRoom].forEach(room => room && room.disconnect());

@@ -21,6 +21,11 @@ export type AudioTrackPublication = LocalAudioTrackPublication | RemoteAudioTrac
 export type DataTrackPublication = LocalDataTrackPublication | RemoteDataTrackPublication;
 export type VideoTrackPublication = LocalVideoTrackPublication | RemoteVideoTrackPublication;
 
+export interface AddProcessorOptions {
+  inputFrameBufferType?: 'video' | 'canvas' | 'offscreencanvas';
+  outputFrameBufferContextType?: string;
+}
+
 export interface EncodingParameters {
   maxAudioBitrate?: number | null;
   maxVideoBitrate?: number | null;
@@ -97,7 +102,6 @@ export type BandwidthProfileMode = 'grid' | 'collaboration' | 'presentation';
 
 export type VideoContentPreferencesMode = 'auto' | 'manual';
 export type ClientTrackSwitchOffControl = 'auto' | 'manual';
-export type DefaultDeviceCaptureMode = 'auto' | 'manual';
 
 export type NotifyWarning = 'recording-media-lost';
 
@@ -185,7 +189,6 @@ export interface NoiseCancellationOptions {
 }
 
 export interface CreateLocalAudioTrackOptions extends CreateLocalTrackOptions {
-  defaultDeviceCaptureMode?: DefaultDeviceCaptureMode;
   noiseCancellationOptions?: NoiseCancellationOptions;
 }
 

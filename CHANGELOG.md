@@ -2,116 +2,43 @@ The Twilio Programmable Video SDKs use [Semantic Versioning](http://www.semver.o
 
 **Version 1.x reached End of Life on September 8th, 2021.** See the changelog entry [here](https://www.twilio.com/changelog/end-of-life-complete-for-unsupported-versions-of-the-programmable-video-sdk). Support for the 1.x version ended on December 4th, 2020.
 
-2.25.0 (November 14, 2022)
-==========================
+2.23.1 (In Progress)
+====================
 
-New Features
-------------
+Changes
+-------
 
-### Auto-switch default audio input devices
+`VideoTrack.addProcessor` now works on browsers that do not support `OffscreenCanvas`. With this release, when used with [@twilio/video-processors
+ v2.0.0](https://github.com/twilio/twilio-video-processors.js/blob/feature/cross_browser_support/CHANGELOG.md#200-in-progress), the Virtual Background feature will work on browsers that supports [WebGL2](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext). See [VideoTrack.addProcessor](https://sdk.twilio.com/js/video/releases/2.23.1/docs/VideoTrack.html#addProcessor__anchor) and [@twilio/video-processors
+ v2.0.0](https://github.com/twilio/twilio-video-processors.js/blob/feature/cross_browser_support/CHANGELOG.md#200-in-progress) for details.
 
-This release adds a new feature that preserves audio continuity in situations where end-users change the default audio input device.
-A LocalAudioTrack is said to be capturing audio from the default audio input device if:
+### Example
 
-- it was created using the MediaTrackConstraints `{ audio: true }`, or
-- it was created using the MediaTrackConstraints `{ audio: { deviceId: 'foo' } }`, and "foo" is not available, or
-- it was created using the MediaTrackConstraints `{ audio: { deviceId: { ideal: 'foo' } } }` and "foo" is not available
+```ts
+import { createLocalVideoTrack } from 'twilio-video';
+import { VirtualBackgroundProcessor } from '@twilio/video-processors';
 
-In previous versions of the SDK, if the default device changed (ex: a bluetooth headset is connected to a mac or windows laptop),
-the LocalAudioTrack continued to capture audio from the old default device (ex: the laptop microphone). Now, a LocalAudioTrack
-will switch automatically from the old default audio input device to the new default audio input device (ex: from the laptop microphone to the headset microphone).
-This feature is controlled by a new [CreateLocalAudioTrackOptions](https://sdk.twilio.com/js/video/releases/2.25.0/docs/global.html#CreateLocalAudioTrackOptions)
-property `defaultDeviceCaptureMode`, which defaults to `auto` (new behavior) or can be set to `manual` (old behavior).
+const virtualBackgroundProcessor = new VirtualBackgroundProcessor({
+  //...options
+});
 
-The application can decide to capture audio from a specific audio input device by creating a LocalAudioTrack:
+await virtualBackground.loadModel();
 
-- using the MediaTrackConstraints `{ audio: { deviceId: 'foo' } }`, and "foo" is available, or
-- using the MediaTrackConstraints `{ audio: { deviceId: { ideal: 'foo' } } }` and "foo" is available, or
-- using the MediaTrackConstraints `{ audio: { deviceId: { exact: 'foo' } } }` and "foo" is available 
+const videoTrack = await createLocalVideoTrack({
+  width: 640,
+  height: 480,
+  frameRate: 24
+});
 
-In this case, the LocalAudioTrack DOES NOT switch to another audio input device if the current audio input device is no
-longer available. See below for the behavior of this property based on how the LocalAudioTrack is created. (VIDEO-11701)
-
-```js
-const { connect, createLocalAudioTrack, createLocalTracks } = require('twilio-video');
-
-// Auto-switch default audio input devices: option 1
-const audioTrack = await createLocalAudioTrack();
-
-// Auto-switch default audio input devices: option 2
-const audioTrack1 = await createLocalAudioTrack({ defaultDeviceCaptureMode: 'auto' });
-
-// Auto-switch default audio input devices: option 3
-const [audioTrack3] = await createLocalTracks({ audio: true });
-
-// Auto-switch default audio input devices: option 4
-const [audioTrack4] = await createLocalTracks({ audio: { defaultDeviceCaptureMode: 'auto' } });
-
-// Auto-switch default audio input devices: option 5
-const room1 = await connect({ audio: true });
-
-// Auto-switch default audio input devices: option 6
-const room2 = await connect({ audio: { defaultDeviceCaptureMode: 'auto' } });
-
-// Disable auto-switch default audio input devices
-const room = await createLocalAudioTrack({ defaultDeviceCaptureMode: 'manual' });
+videoTrack.addProcessor(processor, {
+  inputFrameBufferType: 'video',
+  outputFrameBufferContextType: 'webgl2',
+});
 ```
 
-**Limitations**
-
-- This feature is not enabled on iOS as it is natively supported.
-- Due to this [WebKit bug](https://bugs.webkit.org/show_bug.cgi?id=232835), MacOS Safari Participants may lose their local audio after switching between default audio input devices two-three times.
-- This feature is not supported on Android Chrome, as it does not support the [MediaDevices.ondevicechange](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/devicechange_event#browser_compatibility) event.
-
-2.24.3 (October 10, 2022)
-=========================
-
 Bug Fixes
 ---------
-
-- Fixed a bug where iOS Safari Participant could not hear or see others after switching back from YouTube picture-in-picture mode. (VIDEO-11352)
-- Fixed a bug where iOS Safari Participant could not hear others after switching from recording an audio message in a messenger app. (VIDEO-11354)
-- Fixed a bug where iOS Safari Participant could not hear or see others after watching a video in another browser tab. (VIDEO-11356)
-- Fixed a bug where iOS Safari Participant sometimes could not hear or see others after finishing an incoming call in full screen mode. (VIDEO-11359)
-
-2.24.2 (September 29, 2022)
-===========================
-
-Bug Fixes
----------
-
-- Fixed a bug where sometimes, a `MediaClientRemoteDescFailedError` was raised when a Chrome Participant who had enabled
-  Adaptive Simulcast (`ConnectOptions.preferredVideoCodecs = 'auto'`) tried to publish a camera Track after publishing a
-  `<canvas>` Track. (VIDEO-11516)
-- Fixed an issue where the Krisp Noise Cancellation fails to load in an application where the content security policy
-  directives `default-src self unsafe-eval` are used. (VIDEO-11537)
-
-2.24.1 (September 6, 2022)
-==========================
-
-Bug Fixes
----------
-
-- Fixed a bug where sometimes a runtime error was raised on iOS devices as shown below. (VIDEO-11263)
-  ```
-  Unhandled Runtime Error: TypeError: null is not an object (evaluating 'el.paused')
-  ```
-- The LocalTrackOptions type definition now contains `logLevel` as an optional property. (VIDEO-10659)
-- Fixed an issue where the `import` keyword was causing problems in webpack and typescript projects. (VIDEO-11220)
-
-2.24.0 (August 22, 2022)
-========================
-
-New Features
-------------
-
-- The support for twilio approved 3rd party noise cancellation solutions is now **generally available**.
-
-Bug Fixes
----------
-
 - Fixed an issue where input media track was not stopped, after `localAudioTrack.stop()` when using noiseCancellation (VIDEO-11047)
-- Added versioning support for noise cancellation plugin. This SDK will require noise cancellation plugin to be version 1.0.0 or greater. (VIDEO-11087)
 
 2.23.0 (July 28, 2022)
 ======================
@@ -157,10 +84,6 @@ function updateNoiseCancellation(enable: boolean) {
 }
 
 ```
-
-**NOTE:** If your application is using the `default-src self` content security policy directive, then you should add
-another directive `unsafe-eval`, which is required for the Krisp Audio Plugin to load successfully.
-
 2.22.2 (July 25, 2022)
 ======================
 
