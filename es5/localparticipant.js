@@ -252,6 +252,7 @@ var LocalParticipant = /** @class */ (function (_super) {
      * @returns {Promise<LocalTrackPublication>}
      */
     LocalParticipant.prototype._getOrCreateLocalTrackPublication = function (localTrack) {
+        console.info('stuff here called _getOrCreateLocalTrackPublication in twilio', localTrack);
         var localTrackPublication = getTrackPublication(this.tracks, localTrack);
         if (localTrackPublication) {
             return Promise.resolve(localTrackPublication);
@@ -259,13 +260,18 @@ var LocalParticipant = /** @class */ (function (_super) {
         var log = this._log;
         var self = this;
         var trackSignaling = this._signaling.getPublication(localTrack._trackSender);
+        console.info('stuff trackSignaling is ', trackSignaling);
         if (!trackSignaling) {
+            console.info('stuff got rejection???', trackSignaling);
             return Promise.reject(new Error("Unexpected error: The " + localTrack + " cannot be published"));
         }
         return new Promise(function (resolve, reject) {
+            console.info('stuff entered promise in twilio');
             function updated() {
+                console.info('stuff updated called?');
                 var error = trackSignaling.error;
                 if (error) {
+                    console.info('stuff error', error);
                     trackSignaling.removeListener('updated', updated);
                     log.warn("Failed to publish the " + trackClass(localTrack, true) + ": " + error.message);
                     self._removeTrack(localTrack, localTrack.id);
@@ -276,11 +282,13 @@ var LocalParticipant = /** @class */ (function (_super) {
                     return;
                 }
                 if (!self._tracks.has(localTrack.id)) {
+                    console.info('stuff reject???');
                     trackSignaling.removeListener('updated', updated);
                     reject(new Error("The " + localTrack + " was unpublished"));
                     return;
                 }
                 var sid = trackSignaling.sid;
+                console.info('stuff sid???', sid);
                 if (!sid) {
                     return;
                 }
@@ -291,24 +299,30 @@ var LocalParticipant = /** @class */ (function (_super) {
                     LocalDataTrackPublication: self._LocalDataTrackPublication,
                     LocalVideoTrackPublication: self._LocalVideoTrackPublication
                 };
+                console.info('stuff options2', options);
                 localTrackPublication = getTrackPublication(self.tracks, localTrack);
+                console.info('stuff localTrackPublication', localTrackPublication);
                 var warningHandler = function (twilioWarningName) {
                     return self.emit('trackWarning', twilioWarningName, localTrackPublication);
                 };
+                console.info('stuff warningHandler');
                 var warningsClearedHandler = function () {
                     return self.emit('trackWarningsCleared', localTrackPublication);
                 };
+                console.info('stuff warningsClearedHandler');
                 var unpublish = function (publication) {
                     localTrackPublication.removeListener('trackWarning', warningHandler);
                     localTrackPublication.removeListener('trackWarningsCleared', warningsClearedHandler);
                     self.unpublishTrack(publication.track);
                 };
+                console.info('stuff unpublish');
                 if (!localTrackPublication) {
                     localTrackPublication = asLocalTrackPublication(localTrack, trackSignaling, unpublish, options);
                     self._addTrackPublication(localTrackPublication);
                 }
                 localTrackPublication.on('warning', warningHandler);
                 localTrackPublication.on('warningsCleared', warningsClearedHandler);
+                console.info('stuff localTrackPublication on');
                 var state = self._signaling.state;
                 if (state === 'connected' || state === 'connecting') {
                     if (localTrack._processorEventObserver) {
@@ -328,12 +342,14 @@ var LocalParticipant = /** @class */ (function (_super) {
                     }
                 }
                 if (state === 'connected') {
+                    console.info('stuff about to call track published');
                     setTimeout(function () {
                         self.emit('trackPublished', localTrackPublication);
                     });
                 }
                 resolve(localTrackPublication);
             }
+            console.info('stuff right before track trackSignaling.on');
             trackSignaling.on('updated', updated);
         });
     };
@@ -406,6 +422,9 @@ var LocalParticipant = /** @class */ (function (_super) {
      * });
      */
     LocalParticipant.prototype.publishTrack = function (localTrackOrMediaStreamTrack, options) {
+        /* eslint no-console: ["error", { allow: ["info"] }] */
+        console.info('stuff here called publish track in twilio', localTrackOrMediaStreamTrack);
+        console.info('stuff options', options);
         var trackPublication = getTrackPublication(this.tracks, localTrackOrMediaStreamTrack);
         if (trackPublication) {
             return Promise.resolve(trackPublication);
@@ -418,11 +437,13 @@ var LocalParticipant = /** @class */ (function (_super) {
             LocalVideoTrack: this._LocalVideoTrack,
             MediaStreamTrack: this._MediaStreamTrack
         }, options);
+        console.info('stuff options after object asign', options);
         var localTrack;
         try {
             localTrack = asLocalTrack(localTrackOrMediaStreamTrack, options);
         }
         catch (error) {
+            console.info('stuff perhaps error on asLocalTrack?', error);
             return Promise.reject(error);
         }
         var noiseCancellation = localTrack.noiseCancellation;
@@ -438,6 +459,7 @@ var LocalParticipant = /** @class */ (function (_super) {
         }
         var addedLocalTrack = this._addTrack(localTrack, localTrack.id, options.priority)
             || this._tracks.get(localTrack.id);
+        console.info('stuff addedLocalTrack', addedLocalTrack);
         return this._getOrCreateLocalTrackPublication(addedLocalTrack);
     };
     /**

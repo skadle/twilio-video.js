@@ -48,6 +48,12 @@ var MediaTrackSender = /** @class */ (function (_super) {
             _clones: {
                 value: new Set()
             },
+            _eventsToReemitters: {
+                value: new Map([
+                    ['mute', function () { return _this.queue('muted'); }],
+                    ['unmute', function () { return _this.queue('unmuted'); }]
+                ])
+            },
             _senders: {
                 value: new Set()
             },
@@ -55,13 +61,36 @@ var MediaTrackSender = /** @class */ (function (_super) {
                 value: new Map()
             },
             isPublishing: {
+                enumerable: true,
                 get: function () {
                     return !!this._clones.size;
                 }
+            },
+            muted: {
+                enumerable: true,
+                get: function () {
+                    return this._track.muted;
+                }
             }
         });
+        _this._reemitMediaStreamTrackEvents();
         return _this;
     }
+    /**
+     * @private
+     */
+    MediaTrackSender.prototype._reemitMediaStreamTrackEvents = function (mediaStreamTrack) {
+        if (mediaStreamTrack === void 0) { mediaStreamTrack = this._track; }
+        var _a = this, eventsToReemitters = _a._eventsToReemitters, track = _a._track;
+        eventsToReemitters.forEach(function (reemitter, event) { return mediaStreamTrack.addEventListener(event, reemitter); });
+        if (track !== mediaStreamTrack) {
+            eventsToReemitters.forEach(function (reemitter, event) { return track.removeEventListener(event, reemitter); });
+            if (track.muted !== mediaStreamTrack.muted) {
+                var reemitter = eventsToReemitters.get(mediaStreamTrack.muted ? 'mute' : 'unmute');
+                reemitter();
+            }
+        }
+    };
     /**
      * Return a new {@link MediaTrackSender} containing a clone of the underlying
      * MediaStreamTrack. No RTCRtpSenders are copied.
@@ -93,6 +122,7 @@ var MediaTrackSender = /** @class */ (function (_super) {
         }).concat(senders.map(function (sender) {
             return _this._replaceTrack(sender, mediaStreamTrack);
         }))).finally(function () {
+            _this._reemitMediaStreamTrackEvents(mediaStreamTrack);
             _this._track = mediaStreamTrack;
         });
     };
@@ -141,8 +171,16 @@ var MediaTrackSender = /** @class */ (function (_super) {
     return MediaTrackSender;
 }(MediaTrackTransceiver));
 /**
- * The {@link MediaTrackSender} replaced the underlying mediaStreamTrack
+ * The {@link MediaTrackSender}'s underlying MediaStreamTrack was muted.
+ * @event MediaTrackSender#muted
+ */
+/**
+ * The {@link MediaTrackSender} replaced the underlying MediaStreamTrack.
  * @event MediaTrackSender#replaced
+ */
+/**
+ * The {@link MediaTrackSender}'s underlying MediaStreamTrack was unmuted.
+ * @event MediaTrackSender#unmuted
  */
 module.exports = MediaTrackSender;
 //# sourceMappingURL=sender.js.map

@@ -32,7 +32,9 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
      * enabled and disabled with {@link LocalMediaTrack#enable} and
      * {@link LocalMediaTrack#disable} or stopped completely with
      * {@link LocalMediaTrack#stop}.
+     * @emits LocalMediaTrack#muted
      * @emits LocalMediaTrack#stopped
+     * @emits LocalMediaTrack#unmuted
      */
     return /** @class */ (function (_super) {
         __extends(LocalMediaTrack, _super);
@@ -73,6 +75,12 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
                 _gUMSilentTrackWorkaround: {
                     value: options.gUMSilentTrackWorkaround
                 },
+                _eventsToReemitters: {
+                    value: new Map([
+                        ['muted', function () { return _this.emit('muted', _this); }],
+                        ['unmuted', function () { return _this.emit('unmuted', _this); }]
+                    ])
+                },
                 _workaroundWebKitBug1208516: {
                     value: options.workaroundWebKitBug1208516
                 },
@@ -100,6 +108,12 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
                         return mediaTrackSender.enabled;
                     }
                 },
+                isMuted: {
+                    enumerable: true,
+                    get: function () {
+                        return mediaTrackSender.muted;
+                    }
+                },
                 isStopped: {
                     enumerable: true,
                     get: function () {
@@ -112,17 +126,20 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
             if (_this._workaroundWebKitBug1208516) {
                 _this._workaroundWebKitBug1208516Cleanup = restartWhenInadvertentlyStopped(_this);
             }
+            _this._reemitTrackSenderEvents();
             return _this;
         }
         /**
          * @private
          */
         LocalMediaTrack.prototype._end = function () {
+            var _this = this;
             if (this._didCallEnd) {
                 return;
             }
             _super.prototype._end.call(this);
             this._didCallEnd = true;
+            this._eventsToReemitters.forEach(function (reemitter, event) { return _this._trackSender.removeListener(event, reemitter); });
             this.emit('stopped', this);
         };
         /**
@@ -131,6 +148,9 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
         LocalMediaTrack.prototype._initialize = function () {
             if (this._didCallEnd) {
                 this._didCallEnd = false;
+            }
+            if (this._eventsToReemitters) {
+                this._reemitTrackSenderEvents();
             }
             _super.prototype._initialize.call(this);
         };
@@ -152,6 +172,15 @@ function mixinLocalMediaTrack(AudioOrVideoTrack) {
             return gUMPromise.then(function (mediaStream) {
                 return mediaStream.getTracks()[0];
             });
+        };
+        /**
+         * @private
+         */
+        LocalMediaTrack.prototype._reemitTrackSenderEvents = function () {
+            var _this = this;
+            this._eventsToReemitters.forEach(function (reemitter, event) { return _this._trackSender.on(event, reemitter); });
+            this._trackSender.dequeue('muted');
+            this._trackSender.dequeue('unmuted');
         };
         /**
          * @private

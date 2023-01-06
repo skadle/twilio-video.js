@@ -4,15 +4,18 @@
  * @param {MediaStreamTrack} track
  * @property {MediaStreamTrack} track
  */
-function RTCRtpSenderShim(track) {
-    Object.defineProperties(this, {
-        track: {
-            enumerable: true,
-            value: track,
-            writable: true
-        }
-    });
-}
+var RTCRtpSenderShim = /** @class */ (function () {
+    function RTCRtpSenderShim(track) {
+        Object.defineProperties(this, {
+            track: {
+                enumerable: true,
+                value: track,
+                writable: true
+            }
+        });
+    }
+    return RTCRtpSenderShim;
+}());
 // NOTE(mmalavalli): Because of the way we will be using this shim, there
 // are a couple of use cases that will not be covered:
 //

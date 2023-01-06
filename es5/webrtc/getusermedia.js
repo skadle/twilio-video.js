@@ -11,10 +11,10 @@
  * @returns Promise<MediaStream>
  */
 function getUserMedia(constraints) {
+    if (constraints === void 0) { constraints = { audio: true, video: true }; }
     if (typeof navigator === 'object'
         && typeof navigator.mediaDevices === 'object'
         && typeof navigator.mediaDevices.getUserMedia === 'function') {
-        constraints = constraints || { audio: true, video: true };
         return navigator.mediaDevices.getUserMedia(constraints);
     }
     return Promise.reject(new Error('getUserMedia is not supported'));

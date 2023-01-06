@@ -1,7 +1,21 @@
 'use strict';
-var flatMap = require('./util').flatMap;
-var guessBrowser = require('./util').guessBrowser;
-var guessBrowserVersion = require('./util').guessBrowserVersion;
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var _a = require('./util'), flatMap = _a.flatMap, guessBrowser = _a.guessBrowser, guessBrowserVersion = _a.guessBrowserVersion;
 var getSdpFormat = require('./util/sdp').getSdpFormat;
 var guess = guessBrowser();
 var guessVersion = guessBrowserVersion();
@@ -45,10 +59,8 @@ function _getStats(peerConnection, options) {
         [localVideoTracks, 'localVideoTrackStats', false],
         [remoteAudioTracks, 'remoteAudioTrackStats', true],
         [remoteVideoTracks, 'remoteVideoTrackStats', true]
-    ], function (triple) {
-        var tracks = triple[0];
-        var statsArrayName = triple[1];
-        var isRemote = triple[2];
+    ], function (_a) {
+        var _b = __read(_a, 3), tracks = _b[0], statsArrayName = _b[1], isRemote = _b[2];
         return tracks.map(function (track) {
             return getTrackStats(peerConnection, track, Object.assign({
                 isRemote: isRemote
@@ -75,7 +87,7 @@ function _getStats(peerConnection, options) {
  * @returns {Promise<StandardizedActiveIceCandidatePairStatsReport>}
  */
 function getActiveIceCandidatePairStats(peerConnection, options) {
-    options = options || {};
+    if (options === void 0) { options = {}; }
     if (typeof options.testForChrome !== 'undefined' || isChrome
         || typeof options.testForSafari !== 'undefined' || isSafari) {
         return peerConnection.getStats().then(standardizeChromeOrSafariActiveIceCandidatePairStats);
@@ -91,8 +103,9 @@ function getActiveIceCandidatePairStats(peerConnection, options) {
  * @returns {?StandardizedActiveIceCandidatePairStatsReport}
  */
 function standardizeChromeOrSafariActiveIceCandidatePairStats(stats) {
-    var activeCandidatePairStats = Array.from(stats.values()).find(function (stat) {
-        return stat.type === 'candidate-pair' && stat.nominated;
+    var activeCandidatePairStats = Array.from(stats.values()).find(function (_a) {
+        var nominated = _a.nominated, type = _a.type;
+        return type === 'candidate-pair' && nominated;
     });
     if (!activeCandidatePairStats) {
         return null;
@@ -112,17 +125,19 @@ function standardizeChromeOrSafariActiveIceCandidatePairStats(stats) {
         { key: 'relayProtocol', type: 'string' }
     ]);
     var standatdizedLocalCandidateStatsReport = activeLocalCandidateStats
-        ? standardizedLocalCandidateStatsKeys.reduce(function (report, keyInfo) {
-            report[keyInfo.key] = typeof activeLocalCandidateStats[keyInfo.key] === keyInfo.type
-                ? activeLocalCandidateStats[keyInfo.key]
-                : keyInfo.key === 'deleted' ? false : null;
+        ? standardizedLocalCandidateStatsKeys.reduce(function (report, _a) {
+            var key = _a.key, type = _a.type;
+            report[key] = typeof activeLocalCandidateStats[key] === type
+                ? activeLocalCandidateStats[key]
+                : key === 'deleted' ? false : null;
             return report;
         }, {})
         : null;
     var standardizedRemoteCandidateStatsReport = activeRemoteCandidateStats
-        ? standardizedCandidateStatsKeys.reduce(function (report, keyInfo) {
-            report[keyInfo.key] = typeof activeRemoteCandidateStats[keyInfo.key] === keyInfo.type
-                ? activeRemoteCandidateStats[keyInfo.key]
+        ? standardizedCandidateStatsKeys.reduce(function (report, _a) {
+            var key = _a.key, type = _a.type;
+            report[key] = typeof activeRemoteCandidateStats[key] === type
+                ? activeRemoteCandidateStats[key]
                 : null;
             return report;
         }, {})
@@ -149,9 +164,10 @@ function standardizeChromeOrSafariActiveIceCandidatePairStats(stats) {
         { key: 'totalRoundTripTime', type: 'number' },
         { key: 'transportId', type: 'string' },
         { key: 'writable', type: 'boolean' }
-    ].reduce(function (report, keyInfo) {
-        report[keyInfo.key] = typeof activeCandidatePairStats[keyInfo.key] === keyInfo.type
-            ? (keyInfo.fixup ? keyInfo.fixup(activeCandidatePairStats[keyInfo.key]) : activeCandidatePairStats[keyInfo.key])
+    ].reduce(function (report, _a) {
+        var key = _a.key, type = _a.type, fixup = _a.fixup;
+        report[key] = typeof activeCandidatePairStats[key] === type
+            ? (fixup ? fixup(activeCandidatePairStats[key]) : activeCandidatePairStats[key])
             : null;
         return report;
     }, {
@@ -165,8 +181,9 @@ function standardizeChromeOrSafariActiveIceCandidatePairStats(stats) {
  * @returns {?StandardizedActiveIceCandidatePairStatsReport}
  */
 function standardizeFirefoxActiveIceCandidatePairStats(stats) {
-    var activeCandidatePairStats = Array.from(stats.values()).find(function (stat) {
-        return stat.type === 'candidate-pair' && stat.nominated;
+    var activeCandidatePairStats = Array.from(stats.values()).find(function (_a) {
+        var nominated = _a.nominated, type = _a.type;
+        return type === 'candidate-pair' && nominated;
     });
     if (!activeCandidatePairStats) {
         return null;
@@ -192,27 +209,25 @@ function standardizeFirefoxActiveIceCandidatePairStats(stats) {
         serverreflexive: 'srflx'
     };
     var standatdizedLocalCandidateStatsReport = activeLocalCandidateStats
-        ? standardizedLocalCandidateStatsKeys.reduce(function (report, keyInfo) {
-            var key = keyInfo.ffKeys && keyInfo.ffKeys.find(function (key) {
-                return key in activeLocalCandidateStats;
-            }) || keyInfo.key;
-            report[keyInfo.key] = typeof activeLocalCandidateStats[key] === keyInfo.type
-                ? key === 'candidateType'
-                    ? candidateTypes[activeLocalCandidateStats[key]] || activeLocalCandidateStats[key]
-                    : activeLocalCandidateStats[key]
-                : key === 'deleted' ? false : null;
+        ? standardizedLocalCandidateStatsKeys.reduce(function (report, _a) {
+            var ffKeys = _a.ffKeys, key = _a.key, type = _a.type;
+            var localStatKey = ffKeys && ffKeys.find(function (key) { return key in activeLocalCandidateStats; }) || key;
+            report[key] = typeof activeLocalCandidateStats[localStatKey] === type
+                ? localStatKey === 'candidateType'
+                    ? candidateTypes[activeLocalCandidateStats[localStatKey]] || activeLocalCandidateStats[localStatKey]
+                    : activeLocalCandidateStats[localStatKey]
+                : localStatKey === 'deleted' ? false : null;
             return report;
         }, {})
         : null;
     var standardizedRemoteCandidateStatsReport = activeRemoteCandidateStats
-        ? standardizedCandidateStatsKeys.reduce(function (report, keyInfo) {
-            var key = keyInfo.ffKeys && keyInfo.ffKeys.find(function (key) {
-                return key in activeRemoteCandidateStats;
-            }) || keyInfo.key;
-            report[keyInfo.key] = typeof activeRemoteCandidateStats[key] === keyInfo.type
-                ? key === 'candidateType'
-                    ? candidateTypes[activeRemoteCandidateStats[key]] || activeRemoteCandidateStats[key]
-                    : activeRemoteCandidateStats[key]
+        ? standardizedCandidateStatsKeys.reduce(function (report, _a) {
+            var ffKeys = _a.ffKeys, key = _a.key, type = _a.type;
+            var remoteStatKey = ffKeys && ffKeys.find(function (key) { return key in activeRemoteCandidateStats; }) || key;
+            report[key] = typeof activeRemoteCandidateStats[remoteStatKey] === type
+                ? remoteStatKey === 'candidateType'
+                    ? candidateTypes[activeRemoteCandidateStats[remoteStatKey]] || activeRemoteCandidateStats[remoteStatKey]
+                    : activeRemoteCandidateStats[remoteStatKey]
                 : null;
             return report;
         }, {})
@@ -239,9 +254,10 @@ function standardizeFirefoxActiveIceCandidatePairStats(stats) {
         { key: 'totalRoundTripTime', type: 'number' },
         { key: 'transportId', type: 'string' },
         { key: 'writable', type: 'boolean' }
-    ].reduce(function (report, keyInfo) {
-        report[keyInfo.key] = typeof activeCandidatePairStats[keyInfo.key] === keyInfo.type
-            ? activeCandidatePairStats[keyInfo.key]
+    ].reduce(function (report, _a) {
+        var key = _a.key, type = _a.type;
+        report[key] = typeof activeCandidatePairStats[key] === type
+            ? activeCandidatePairStats[key]
             : null;
         return report;
     }, {
@@ -259,17 +275,16 @@ function standardizeFirefoxActiveIceCandidatePairStats(stats) {
 function getTracks(peerConnection, kind, localOrRemote) {
     var getSendersOrReceivers = localOrRemote === 'local' ? 'getSenders' : 'getReceivers';
     if (peerConnection[getSendersOrReceivers]) {
-        return peerConnection[getSendersOrReceivers]().map(function (senderOrReceiver) {
-            return senderOrReceiver.track;
-        }).filter(function (track) {
-            return track && track.kind === kind;
-        });
+        return peerConnection[getSendersOrReceivers]()
+            .map(function (_a) {
+            var track = _a.track;
+            return track;
+        })
+            .filter(function (track) { return track && track.kind === kind; });
     }
     var getStreams = localOrRemote === 'local' ? 'getLocalStreams' : 'getRemoteStreams';
-    return flatMap(peerConnection[getStreams](), function (stream) {
-        var getTracks = kind === 'audio' ? 'getAudioTracks' : 'getVideoTracks';
-        return stream[getTracks]();
-    });
+    var getTracks = kind === 'audio' ? 'getAudioTracks' : 'getVideoTracks';
+    return flatMap(peerConnection[getStreams](), function (stream) { return stream[getTracks](); });
 }
 /**
  * Get the standardized statistics for a particular MediaStreamTrack.
@@ -279,7 +294,7 @@ function getTracks(peerConnection, kind, localOrRemote) {
  * @returns {Promise.<Array<StandardizedTrackStatsReport>>}
  */
 function getTrackStats(peerConnection, track, options) {
-    options = options || {};
+    if (options === void 0) { options = {}; }
     if (typeof options.testForChrome !== 'undefined' || isChrome) {
         return chromeOrSafariGetTrackStats(peerConnection, track);
     }
@@ -418,7 +433,8 @@ function standardizeChromeOrSafariStats(response) {
     var codec = null;
     var localMedia = null;
     response.forEach(function (stat) {
-        switch (stat.type) {
+        var type = stat.type;
+        switch (type) {
             case 'inbound-rtp':
                 inbound = stat;
                 break;
@@ -583,7 +599,7 @@ function standardizeFirefoxStats(response, isRemote) {
     //
     //   https://bugzilla.mozilla.org/show_bug.cgi?id=1377225
     //
-    response = response || new Map();
+    if (response === void 0) { response = new Map(); }
     var inbound = null;
     var outbound = null;
     // NOTE(mmalavalli): Starting from Firefox 63, RTC{Inbound, Outbound}RTPStreamStats.isRemote
@@ -596,17 +612,18 @@ function standardizeFirefoxStats(response, isRemote) {
     // Source: https://blog.mozilla.org/webrtc/getstats-isremote-65/
     //
     response.forEach(function (stat) {
-        if (stat.isRemote) {
+        var isRemote = stat.isRemote, remoteId = stat.remoteId, type = stat.type;
+        if (isRemote) {
             return;
         }
-        switch (stat.type) {
+        switch (type) {
             case 'inbound-rtp':
                 inbound = stat;
-                outbound = response.get(stat.remoteId);
+                outbound = response.get(remoteId);
                 break;
             case 'outbound-rtp':
                 outbound = stat;
-                inbound = response.get(stat.remoteId);
+                inbound = response.get(remoteId);
                 break;
         }
     });

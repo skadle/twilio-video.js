@@ -1,7 +1,6 @@
 /* globals RTCPeerConnection, RTCRtpTransceiver */
 'use strict';
-var flatMap = require('./').flatMap;
-var guessBrowser = require('./').guessBrowser;
+var _a = require('./'), flatMap = _a.flatMap, guessBrowser = _a.guessBrowser;
 // NOTE(mmalavalli): We cache Chrome's sdpSemantics support in order to prevent
 // instantiation of more than one RTCPeerConnection.
 var isSdpSemanticsSupported = null;
@@ -142,7 +141,7 @@ function getUnifiedPlanTrackIds(sdp) {
  * @returns {Set<string>}
  */
 function getPlanBSSRCs(sdp, trackId) {
-    var pattern = '^a=ssrc:([0-9]+) +msid:[^ ]+ +' + trackId + ' *$';
+    var pattern = "^a=ssrc:([0-9]+) +msid:[^ ]+ +" + trackId + " *$";
     return getMatches(pattern, sdp);
 }
 /**
@@ -153,13 +152,11 @@ function getPlanBSSRCs(sdp, trackId) {
  * @returns {Array<string>} mediaSections
  */
 function getMediaSections(sdp, kind, direction) {
-    kind = kind || '.*';
-    direction = direction || '.*';
-    return sdp.split('\r\nm=').slice(1).map(function (mediaSection) {
-        return 'm=' + mediaSection;
-    }).filter(function (mediaSection) {
-        var kindPattern = new RegExp('m=' + kind, 'gm');
-        var directionPattern = new RegExp('a=' + direction, 'gm');
+    if (kind === void 0) { kind = '.*'; }
+    if (direction === void 0) { direction = '.*'; }
+    return sdp.split('\r\nm=').slice(1).map(function (mediaSection) { return "m=" + mediaSection; }).filter(function (mediaSection) {
+        var kindPattern = new RegExp("m=" + kind, 'gm');
+        var directionPattern = new RegExp("a=" + direction, 'gm');
         return kindPattern.test(mediaSection) && directionPattern.test(mediaSection);
     });
 }
@@ -179,10 +176,8 @@ function getMediaSectionSSRCs(mediaSection) {
  */
 function getUnifiedPlanSSRCs(sdp, trackId) {
     var mediaSections = getMediaSections(sdp);
-    var msidAttrRegExp = new RegExp('^a=msid:[^ ]+ +' + trackId + ' *$', 'gm');
-    var matchingMediaSections = mediaSections.filter(function (mediaSection) {
-        return mediaSection.match(msidAttrRegExp);
-    });
+    var msidAttrRegExp = new RegExp("^a=msid:[^ ]+ +" + trackId + " *$", 'gm');
+    var matchingMediaSections = mediaSections.filter(function (mediaSection) { return mediaSection.match(msidAttrRegExp); });
     return new Set(flatMap(matchingMediaSections, getMediaSectionSSRCs));
 }
 /**
@@ -193,9 +188,7 @@ function getUnifiedPlanSSRCs(sdp, trackId) {
  * @returns {Map<string, Set<string>>} trackIdsToSSRCs
  */
 function getTrackIdsToSSRCs(getTrackIds, getSSRCs, sdp) {
-    return new Map(Array.from(getTrackIds(sdp)).map(function (trackId) {
-        return [trackId, getSSRCs(sdp, trackId)];
-    }));
+    return new Map(Array.from(getTrackIds(sdp)).map(function (trackId) { return [trackId, getSSRCs(sdp, trackId)]; }));
 }
 /**
  * Get a Map from MediaStreamTrack IDs to SSRCs from a Plan B SDP.
@@ -236,8 +229,8 @@ function updateTrackIdsToSSRCs(getTrackIdsToSSRCs, trackIdsToSSRCs, sdp) {
         oldSSRCs.forEach(function (oldSSRC, i) {
             var newSSRC = newSSRCs[i];
             newSSRCsToOldSSRCs.set(newSSRC, oldSSRC);
-            var pattern = '^a=ssrc:' + newSSRC + ' (.*)$';
-            var replacement = 'a=ssrc:' + oldSSRC + ' $1';
+            var pattern = "^a=ssrc:" + newSSRC + " (.*)$";
+            var replacement = "a=ssrc:" + oldSSRC + " $1";
             sdp = sdp.replace(new RegExp(pattern, 'gm'), replacement);
         });
     });

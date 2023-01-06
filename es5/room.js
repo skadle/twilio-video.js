@@ -38,7 +38,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
 var EventEmitter = require('./eventemitter');
 var RemoteParticipant = require('./remoteparticipant');
 var StatsReport = require('./stats/statsreport');
-var valueToJSON = require('./util').valueToJSON;
+var _a = require('./util'), flatMap = _a.flatMap, valueToJSON = _a.valueToJSON;
 var nInstances = 0;
 /**
  * A {@link Room} represents communication between you and one or more
@@ -195,6 +195,55 @@ var Room = /** @class */ (function (_super) {
                 }));
             });
         });
+    };
+    /**
+     * Restart the muted local media {@link Track}s and play inadvertently paused HTMLMediaElements
+     * that are attached to local and remote media {@link Track}s. This method is useful mainly on
+     * mobile browsers (Safari and Chrome on iOS), where there is a possibility that the muted local
+     * media {@link Track}s are never unmuted and inadvertently paused HTMLMediaElements are never
+     * played again, especially after handling an incoming phone call.
+     * @returns {this}
+     */
+    Room.prototype.refreshInactiveMedia = function () {
+        var localTrackPublications = this.localParticipant.tracks;
+        var localMediaTracks = Array.from(localTrackPublications.values())
+            .filter(function (_a) {
+            var kind = _a.track.kind;
+            return kind !== 'data';
+        })
+            .map(function (_a) {
+            var track = _a.track;
+            return track;
+        });
+        var remoteMediaTracks = flatMap(this.participants, function (participants) { return Array.from(participants.tracks.values()); })
+            .filter(function (_a) {
+            var track = _a.track;
+            return track && track.kind !== 'data';
+        })
+            .map(function (_a) {
+            var track = _a.track;
+            return track;
+        });
+        var mediaTracks = localMediaTracks.concat(remoteMediaTracks);
+        var unmuteEvent = new Event('unmute');
+        localMediaTracks.forEach(function (_a) {
+            var isMuted = _a.isMuted, mediaStreamTrack = _a.mediaStreamTrack;
+            if (isMuted) {
+                mediaStreamTrack.dispatchEvent(unmuteEvent);
+            }
+        });
+        var pauseEvent = new Event('pause');
+        mediaTracks.forEach(function (_a) {
+            var attachments = _a._attachments, elShims = _a._elShims;
+            return attachments.forEach(function (el) {
+                var shim = elShims.get(el);
+                var isInadvertentlyPaused = el.paused && shim && !shim.pausedIntentionally();
+                if (isInadvertentlyPaused) {
+                    el.dispatchEvent(pauseEvent);
+                }
+            });
+        });
+        return this;
     };
     Room.prototype.toJSON = function () {
         return valueToJSON(this);

@@ -25,6 +25,10 @@ var LocalMediaAudioTrack = mixinLocalMediaTrack(AudioTrack);
  * {@link LocalAudioTrack#stop}.
  * @extends AudioTrack
  * @property {Track.ID} id - The {@link LocalAudioTrack}'s ID
+ * @property {boolean} isMuted - Whether or not the audio source has stopped sending samples to the
+ *   {@link LocalAudioTrack}; This can happen when the microphone is taken over by another application,
+ *   mainly on mobile devices; When this property toggles, then <code>muted</code> and <code>unmuted</code>
+ *   events are fired appropriately
  * @property {boolean} isStopped - Whether or not the {@link LocalAudioTrack} is
  *   stopped
  * @property {NoiseCancellation?} noiseCancellation - When a LocalAudioTrack is created
@@ -32,8 +36,10 @@ var LocalMediaAudioTrack = mixinLocalMediaTrack(AudioTrack);
  *   to enable or disable the noise cancellation at runtime.
  * @emits LocalAudioTrack#disabled
  * @emits LocalAudioTrack#enabled
+ * @emits LocalAudioTrack#muted
  * @emits LocalAudioTrack#started
  * @emits LocalAudioTrack#stopped
+ * @emits LocalAudioTrack#unmuted
  */
 var LocalAudioTrack = /** @class */ (function (_super) {
     __extends(LocalAudioTrack, _super);
@@ -83,7 +89,22 @@ var LocalAudioTrack = /** @class */ (function (_super) {
         return _super.prototype._reacquireTrack.call(this, constraints);
     };
     /**
-     * Disable the {@link LocalAudioTrack}. This is effectively "mute".
+     * @private
+     */
+    LocalAudioTrack.prototype._restartDefaultDevice = function () {
+        var _this = this;
+        var constraints = Object.assign({}, this._constraints);
+        var restartConstraints = Object.assign({}, constraints, { deviceId: this._currentDefaultDeviceInfo.deviceId });
+        return this.restart(restartConstraints).then(function () {
+            // NOTE(mmalavalli): Since we used the new default device's ID while restarting the LocalAudioTrack,
+            // we reset the constraints to the original constraints so that the default device detection logic in
+            // _maybeRestartOnDefaultDeviceChange() still works.
+            _this._constraints = constraints;
+            _this._maybeRestartOnDefaultDeviceChange();
+        });
+    };
+    /**
+     * Disable the {@link LocalAudioTrack}. This is equivalent to muting the audio source.
      * @returns {this}
      * @fires LocalAudioTrack#disabled
      */
@@ -91,13 +112,13 @@ var LocalAudioTrack = /** @class */ (function (_super) {
         return _super.prototype.disable.apply(this, arguments);
     };
     /**
-     * Enable the {@link LocalAudioTrack}. This is effectively "unmute".
+     * Enable the {@link LocalAudioTrack}. This is equivalent to unmuting the audio source.
      * @returns {this}
      * @fires LocalAudioTrack#enabled
     */ /**
-     * Enable or disable the {@link LocalAudioTrack}. This is effectively "unmute"
-     * or "mute".
-     * @param {boolean} [enabled] - Specify false to mute the
+     * Enable or disable the {@link LocalAudioTrack}. This is equivalent to unmuting or muting
+     * the audio source respectively.
+     * @param {boolean} [enabled] - Specify false to disable the
      *   {@link LocalAudioTrack}
      * @returns {this}
      * @fires LocalAudioTrack#disabled
@@ -158,15 +179,21 @@ var LocalAudioTrack = /** @class */ (function (_super) {
     return LocalAudioTrack;
 }(LocalMediaAudioTrack));
 /**
- * The {@link LocalAudioTrack} was disabled, i.e. "muted".
+ * The {@link LocalAudioTrack} was disabled, i.e. the audio source was muted by the user.
  * @param {LocalAudioTrack} track - The {@link LocalAudioTrack} that was
  *   disabled
  * @event LocalAudioTrack#disabled
  */
 /**
- * The {@link LocalAudioTrack} was enabled, i.e. "unmuted".
+ * The {@link LocalAudioTrack} was enabled, i.e. the audio source was unmuted by the user.
  * @param {LocalAudioTrack} track - The {@link LocalAudioTrack} that was enabled
  * @event LocalAudioTrack#enabled
+ */
+/**
+ * The {@link LocalAudioTrack} was muted because the audio source stopped sending samples, most
+ * likely due to another application taking said audio source, especially on mobile devices.
+ * @param {LocalAudioTrack} track - The {@link LocalAudioTrack} that was muted
+ * @event LocalAudioTrack#muted
  */
 /**
  * The {@link LocalAudioTrack} started. This means there is enough audio data to
@@ -180,6 +207,15 @@ var LocalAudioTrack = /** @class */ (function (_super) {
  * MediaStreamTrack ended.
  * @param {LocalAudioTrack} track - The {@link LocalAudioTrack} that stopped
  * @event LocalAudioTrack#stopped
+ */
+/**
+ * The {@link LocalAudioTrack} was unmuted because the audio source resumed sending samples,
+ * most likely due to the application that took over the said audio source has released it
+ * back to the application, especially on mobile devices. This event is also fired when
+ * {@link LocalAudioTrack#restart} is called on a muted {@link LocalAudioTrack} with a
+ * new audio source.
+ * @param {LocalAudioTrack} track - The {@link LocalAudioTrack} that was unmuted
+ * @event LocalAudioTrack#unmuted
  */
 module.exports = LocalAudioTrack;
 //# sourceMappingURL=localaudiotrack.js.map

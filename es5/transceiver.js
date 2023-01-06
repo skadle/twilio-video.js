@@ -14,11 +14,11 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var EventEmitter = require('events').EventEmitter;
+var QueueingEventEmitter = require('./queueingeventemitter');
 /**
  * A {@link TrackTransceiver} represents either one or more local RTCRtpSenders
  * or RTCDataChannels, or a single RTCRtpReceiver or remote RTCDataChannel.
- * @extends EventEmitter
+ * @extends QueueingEventEmitter
  * @property {Track.ID} id
  * @property {Track.kind} kind
  */
@@ -52,7 +52,7 @@ var TrackTransceiver = /** @class */ (function (_super) {
         this.emit('stopped');
     };
     return TrackTransceiver;
-}(EventEmitter));
+}(QueueingEventEmitter));
 /**
  * The {@link TrackTransceiver} was stopped.
  * @event TrackTransceiver#stopped
